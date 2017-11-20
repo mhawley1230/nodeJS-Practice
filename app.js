@@ -3,6 +3,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 var expressValidator = require('express-validator');
+var mongojs = require('mongojs');
+var ObjectId = mongojs.ObjectId;
+var db = mongojs('customerapp', ['users']);
 
 // import express dependency
 const app = express();
@@ -35,31 +38,12 @@ app.use(bodyParser.urlencoded({entended: false}));
 // Set Static Path
 app.use(express.static(path.join(__dirname, 'public')));
 
-var users = [
-  {
-    id: 1,
-    first_name: 'Json',
-    last_name: 'Vorhees',
-    email: 'jsonvorhees@gmail.com'
-  },
-  {
-    id: 2,
-    first_name: 'Bob',
-    last_name: 'Smith',
-    email: 'bsmitty@gmail.com'
-  },
-  {
-    id: 3,
-    first_name: 'Jill',
-    last_name: 'Jackson',
-    email: 'jjackson@gmail.com'
-  }
-]
-
 app.get('/', function(req, res) {
-  res.render('index', {
-    title: 'Customers',
-    users: users
+  db.users.find(function (err, docs) {
+     res.render('index', {
+       title: 'Customers',
+       users: docs
+     });
   });
 });
 
@@ -84,8 +68,22 @@ app.post('/user/add', function(req, res) {
       email: req.body.email
     }
 
-    console.log(newUser);
+    db.users.insert(newUser, function(err, result) {
+      if(err){
+        console.log(err);
+      }
+      res.redirect('/');
+    });
   }
+});
+
+app.delete('/users/delete/:id', function(req, res) {
+  db.users.remove({_id: ObjectId(req.params.id)}, function(err, result){
+    if(err){
+      console.log(err);
+    }
+    res.redirect('/');
+  });
 });
 
 app.listen(3000, function() {
